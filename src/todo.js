@@ -1,150 +1,170 @@
-import React, {useState} from 'react';
-
-const data = [
-    { text: 'abc', id: 1, check: false },
-    { text: 'axyz', id: 2, check: true },
-]
-
-
-const Todo = () =>{
+import React, { useState, useEffect } from 'react';
+import './index.css';
+import KeyboardArrowDownIcon from '@material-ui/icons/KeyboardArrowDown';
+import ClearOutlinedIcon from '@material-ui/icons/ClearOutlined';
+import { borderRadius } from '@material-ui/system';
+const Todo = () => {
     const [text, setText] = useState('');
-    const [list, setList] = useState(data);
-    const [filter, setFilter] = useState([]);
-  
-
+    const [activeCount, setactiveCount] = useState(0);
+    const [list, setList] = useState([]);
+    const [filterlist, setFilterList] = useState([]);
+    const [editable, setEditable] = useState(false);
+    useEffect(() => {
+        if (filterlist.length) {
+            const updatedActiveCount = filterlist.filter(val => !val.check)
+            setactiveCount(updatedActiveCount.length || 0)
+        }
+    }, [filterlist])
     const textChange = (e) => {
         setText(e.target.value);
     }
-
-    const handleClick = e => {
-        if (text) {
-            setList((prevValue) => {
-                return [
-                    ...prevValue,
-                    { text: text, check: false, id: Math.random().toString() }
-                ]
-            })
+    const showResult = e => {
+        if (text.trim().length > 0) {
+            setList([...list, { text: text.trim(), check: false, id: Math.random().toString() }])
+            setFilterList([...list, { text: text, check: false, id: Math.random().toString() }])
         }
-       
+        else {
+            alert('List can\'t\ be empty', 'List name cannot be empty', [
+                { text: 'OK', onPress: () => console.log('alert closed') }
+            ]);
+        }
         setText('');
         e.preventDefault();
     }
-    const listCompleted = () => {
-        setFilter(list)
-       let listData = list.filter(item=>{
-            if(item.check){
-                return item
-               }
-        })
-        
-        setList(listData)
-        console.log(listData)
-      }
-
-      const Active = ()=>{
-        setFilter(list)
-       let listData = list.filter(item=>{
-            if(!item.check){
-                return item
-               }
-        })
-        
-        setList(listData)
-        console.log(listData)
-      }
-
-      const All = ()=>{
-          setFilter(list)
-        let listData = list.filter(item=>{
-            if(item.check==false){
-                return item
-            }
-           
-        })
-
-        setList(listData)
-        console.log(listData)
-      }
-
-  
     const setCheck = (item) => {
         const newList = list.map(todo => {
-            if (todo.id == item.id) {
+            if (todo.id === item.id) {
+                // console.log(item.id, todo.id)
                 return { ...todo, check: !todo.check }
             } else {
                 return { ...todo }
             }
         })
+        const checkAllChecked = newList.filter(val => val.check)
+        if (checkAllChecked.length === newList.length) {
+            setEditable(true)
+        }
         setList(newList);
+        setFilterList(newList)
     }
-  
-
-
-
-    return(
-        <div style={{color:"#4d4d4d",borderColor:""}}>
-            <h1 style={{textAlign:"center",color:"orange"}}>todos</h1>
-            <div style={{border:"1px solid black"}}>
-            <form onSubmit={handleClick}>
-            <input type="text" style={{width:"500px",height:"50px",border:"none",fontSize:"20px"}} value={text}  onChange={textChange} placeholder="what do we do next"/>
-            {/* <button  type="submit">submit</button> */}
-            </form>
-            <div style={{}}>
-                {list.map((item,id)=>(
-                     <div style={{display:"flex",borderBottom:"1px solid black",width:"100%",height:"50px",alignItems:"center",fontSize:"20px"}} key={id}>
-                           <input type="checkbox"  checked={item.check}
-                            onChange={() => setCheck(item)}/>
-                          {item.check ? <del>{item.text}</del>:<div>{item.text}</div>}
-                    </div>
-                ))}
-                <div style={{display:"flex",justifyContent:"center",width:"100%",height:"35px",borderBottom:"1px solid black"}}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",width:"95%",height:"30px",alignItems:"center",}}>
-                    <label> { list.length}</label>
-                    <div style={{display:"flex",justifyContent:"space-between",width:"35%"}}>
-                    <div onClick={()=>(setList(filter))}><span>All</span></div>
-                    <button onClick={Active}><span>Active</span></button>
-                    <div onClick={listCompleted}><span>Completed</span></div>
-                    </div>
-                    <div onClick={All}><span>Clear completed</span></div>
-                </div>
-                </div>
-               
+    // For deleting a item from list
+    const removeList = (id) => {
+        const updatedList = list.filter(item => item.id !== id)
+        setList(updatedList);
+        setFilterList(updatedList)
+    }
+    // Show all the items in the List
+    const allList = () => {
+        setList(filterlist);
+    }
+    // Show all the completed items in the list
+    const completeList = () => {
+        let listData = filterlist.filter(item => {
+            if (item.check) {
+                return item
+            }
+        })
+        setList(listData)
+    }
+    // Show all the active items in the list
+    const activeList = () => {
+        const listData = filterlist.filter(item => {
+            if (!item.check) {
+                return item
+            }
+        })
+        setList(listData)
+    }
+    // Delete all the completed list from original list
+    const onComplete = () => {
+        const finalData = filterlist.filter(item => {
+            if (!item.check) {
+                return item
+            }
+        })
+        setList(finalData)
+        setFilterList(finalData)
+    }
+    // To select/unselect all the items in the list
+    const selectAll = () => {
+        const listUpadte = [...list]
+        const updatedList = listUpadte.map(val => {
+            return { ...val, check: !editable }
+        })
+        setList(updatedList);
+        setFilterList(updatedList)
+        setEditable(!editable)
+    }
+    const editListText = (e, id) => {
+        // console.log(e.target.value)
+        e.preventDefault();
+        // setText(e.target.value)
+        //console.log(e.target.value,id)
+        const RemovedList = list.map((item, i) => {
+            if (i === id) {
+                return { ...item, text: e.target.value }
+            }
+            else {
+                return { ...item }
+            }
+        })
+        setList(RemovedList)
+    }
+    const fixText = (e) => {
+        e.preventDefault();
+        setText('')
+    }
+    return (
+        <div className="mainDiv">
+            <div className="main_subDiv">
+                {filterlist.length > 0 &&
+                    <KeyboardArrowDownIcon onClick={selectAll} className="form_button" />
+                }
+                <div className="form_Div">
+                    <form className="input_form" onSubmit={showResult}>
+                        <input
+                            className="input_field"
+                            type="text"
+                            placeholder="What needs to be done?"
+                            value={text}
+                            onChange={textChange}
+                        />
+                    </form>
                 </div>
             </div>
-          
-
-            {/* <div style={{display:"flex",justifyContent:"space-between"}}>
-                <div>selected</div>
-                <div>All</div>
-                <button>Active</button>
-                <div>completed</div>
-
-            </div> */}
-            {/* <h3>Todo App</h3>
-            <div style={{border:"solid black",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                <div >
-                <input type="checkbox" checked={check} onClick={()=>(setCheck(!check))}/>
-                <div onClick={()=>(setCheck(!check))}>click me</div>
-                <label> abc</label>
+            {
+                list.map((item, id) =>
+                    <form onSubmit={fixText}>
+                        <div className="list_div" key={id}>
+                            <input
+                                className="input_checkBox"
+                                type="checkbox"
+                                checked={item.check}
+                                onChange={() => setCheck(item)}
+                            />
+                            {
+                                item.check ?
+                                    <a className="anchor_tag"> <del><input className="anchor_inputBox" type="text" value={item.text} onChange={(e) => editListText(e, id)} /></del></a>
+                                    :
+                                    <span ><input className="span_inputBox" type="text" value={item.text} onChange={(e) => editListText(e, id)} /></span>
+                            }
+                            <ClearOutlinedIcon onClick={() => removeList(item.id)} className="button_list"> </ClearOutlinedIcon>
+                            {/* <button type='button' onClick={() => removeList(item.id)} className="button_list">x</button> */}
+                        </div>
+                    </form>
+                )
+            }
+            {
+                filterlist.length > 0 &&
+                <div className="footerDiv">
+                    <span className="footerspan"> {activeCount} item left</span>
+                    <button onClick={allList} className="footerBtn_1" color="black">All</button>
+                    <button onClick={activeList} className="footerBtn_1" color="black">Active</button>
+                    <button onClick={completeList} className="footerBtn_1" color="black">Completed</button>
+                    <button onClick={onComplete} className="footerBtn_2" color="black">Clear Completed</button>
                 </div>
-                <div>
-                {check ? "completed":null}
-                </div>
-            </div>
-            <div style={{border:"solid black",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                <div >
-                <input type="checkbox" checked={check2} onClick={()=>(setCheck2(!check2))}/>
-                <div onClick={()=>(setCheck(!check))}>click me</div>
-                <label> xyz</label>
-                </div>
-                <div>
-                {check2 ? "completed":null}
-                </div>
-            </div>
-            <br/>
-            <button>Submit</button> */}
-        </div>
-    )
+            }
+        </div >
+    );
 }
-
 export default Todo;
